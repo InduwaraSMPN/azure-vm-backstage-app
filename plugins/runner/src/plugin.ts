@@ -16,7 +16,7 @@ export const RunnerPage = runnerPlugin.provide(
   createRoutableExtension({
     name: 'RunnerPage',
     component: () =>
-      import('./components/ExampleComponent').then(m => m.ExampleComponent),
+      import('./components/LocalhostComponents').then(m => m.LocalhostComponents),
     mountPoint: rootRouteRef,
   }),
 );

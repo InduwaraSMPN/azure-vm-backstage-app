@@ -37,6 +37,7 @@ import { RequirePermission } from '@backstage/plugin-permission-react';
 import { catalogEntityCreatePermission } from '@backstage/plugin-catalog-common/alpha';
 
 import { githubAuthApiRef } from '@backstage/core-plugin-api';
+import { RunnerPage } from '@internal/plugin-runner';
 
 const app = createApp({
   apis,
@@ -109,6 +110,7 @@ const routes = (
     </Route>
     <Route path="/settings" element={<UserSettingsPage />} />
     <Route path="/catalog-graph" element={<CatalogGraphPage />} />
+    <Route path="/runner" element={<RunnerPage />} />
   </FlatRoutes>
 );
 

@@ -95,11 +95,11 @@ catalog:
     - allow: [Component, System, API, Resource, Location]
   locations:
     - type: url
-      target: https://raw.githubusercontent.com/InduwaraSMPN/YAMLs-for-Backstage/main/organizations/wso2/org.yaml
+      target: https://github.com/InduwaraSMPN/YAMLs-for-Backstage/blob/main/organizations/wso2/org.yaml
       rules:
         - allow: [User, Group]
     - type: url
-      target: https://raw.githubusercontent.com/InduwaraSMPN/YAMLs-for-Backstage/main/organizations/wso2/templates/wso2-sample-nodejs-app/template.yaml
+      target: https://github.com/InduwaraSMPN/YAMLs-for-Backstage/blob/main/organizations/wso2/templates/wso2-sample-nodejs-app/template.yaml
       rules:
         - allow: [Template]
     # # Uncomment these lines to add more example data

@@ -53,20 +53,4 @@ metadata:
 spec:
   type: service
   lifecycle: experimental
-  owner: guests
-
----
-# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
-apiVersion: backstage.io/v1alpha1
-kind: Component
-metadata:
-  name: todo-react
-  title: To-do in React
-  description: A web-based To-do application, written in React. For demonstration purposes only!
-  tags:
-    - react
-    - website
-spec:
-  type: service
-  lifecycle: experimental
   owner: integrations-team

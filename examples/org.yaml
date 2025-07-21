@@ -15,3 +15,18 @@ metadata:
 spec:
   type: team
   children: []
+---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-group
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: integrations-team
+  title: Integrations Team
+  description: Integrations Team
+spec:
+  type: team
+  profile:
+    displayName: Integrations Team
+    email: integrations-team@wso2.com
+  children: []
+  members: []

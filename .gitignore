@@ -28,6 +28,7 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.keys
 .env.test
 
 # Build output

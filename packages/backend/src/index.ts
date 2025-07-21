@@ -83,6 +83,7 @@ backend.add(customGithubAuthModule);
 
 // --- Catalog Plugins ---
 backend.add(import('@backstage/plugin-catalog-backend'));
+backend.add(import('@backstage/plugin-catalog-backend-module-github'));
 backend.add(
   import('@backstage/plugin-catalog-backend-module-scaffolder-entity-model'),
 );

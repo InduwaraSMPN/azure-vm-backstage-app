@@ -1,9 +1,9 @@
 app:
-  title: Scaffolded Backstage App
-  baseUrl: http://localhost:3000
+  title: WSO2 Backstage
+  baseUrl: http://0.0.0.0:3000/
 
 organization:
-  name: My Company
+  name: WSO2
 
 backend:
   # Used for enabling authentication, secret is shared by all backend plugins
@@ -12,7 +12,7 @@ backend:
   # auth:
   #   keys:
   #     - secret: ${BACKEND_SECRET}
-  baseUrl: http://localhost:7007
+  baseUrl: http://20.2.34.21:7007
   listen:
     port: 7007
     # Uncomment the following host directive to bind to specific interfaces
@@ -22,14 +22,18 @@ backend:
     # Content-Security-Policy directives follow the Helmet format: https://helmetjs.github.io/#reference
     # Default Helmet Content-Security-Policy values can be removed by setting the key to false
   cors:
-    origin: http://localhost:3000
+    origin: http://20.2.34.21:3000
     methods: [GET, HEAD, PATCH, POST, PUT, DELETE]
     credentials: true
   # This is for local development only, it is not recommended to use this in production
   # The production database configuration is stored in app-config.production.yaml
   database:
-    client: better-sqlite3
-    connection: ':memory:'
+    client: pg
+    connection:
+      host: ${POSTGRES_HOST}
+      port: ${POSTGRES_PORT}
+      user: ${POSTGRES_USER}
+      password: ${POSTGRES_PASSWORD}
   # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
 
 integrations:
@@ -63,10 +67,19 @@ techdocs:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
 auth:
+  experimentalExtraAllowedOrigins: [ 'http://20.2.34.21:3000' ]
   # see https://backstage.io/docs/auth/ to learn about auth providers
   providers:
     # See https://backstage.io/docs/auth/guest/provider
     guest: {}
+    github:
+      development:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+        ## uncomment if using GitHub Enterprise
+        # enterpriseInstanceUrl: ${AUTH_GITHUB_ENTERPRISE_INSTANCE_URL}
+        ## uncomment to set lifespan of user session
+        # sessionDuration: { hours: 24 } # supports `ms` library format (e.g. '24h', '2 days'), ISO duration, "human duration" as used in code
 
 scaffolder:
   # see https://backstage.io/docs/features/software-templates/configuration for software template options

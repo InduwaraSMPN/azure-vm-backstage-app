@@ -98,8 +98,14 @@ catalog:
       target: https://github.com/InduwaraSMPN/YAMLs-for-Backstage/blob/main/organizations/wso2/org.yaml
       rules:
         - allow: [User, Group]
+
     - type: url
       target: https://github.com/InduwaraSMPN/YAMLs-for-Backstage/blob/main/organizations/wso2/templates/wso2-sample-nodejs-app/template.yaml
+      rules:
+        - allow: [Template]
+        
+    - type: url
+      target: https://github.com/InduwaraSMPN/next.js-blog-sample/blob/master/template.yaml
       rules:
         - allow: [Template]
     # # Uncomment these lines to add more example data

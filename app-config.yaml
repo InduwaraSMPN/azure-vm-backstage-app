@@ -35,7 +35,10 @@ backend:
       user: ${POSTGRES_USER}
       password: ${POSTGRES_PASSWORD}
   # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
-
+  reading:
+    allow:
+      - host: raw.githubusercontent.com
+      - host: github.com
 integrations:
   github:
     - host: github.com
@@ -92,9 +95,13 @@ catalog:
     - allow: [Component, System, API, Resource, Location]
   locations:
     - type: url
-      target: https://raw.githubusercontent.com/InduwaraSMPN/YAMLs-for-Backstage/refs/heads/main/organizations/wso2/org.yaml
+      target: https://raw.githubusercontent.com/InduwaraSMPN/YAMLs-for-Backstage/main/organizations/wso2/org.yaml
       rules:
-        - allow: [Component, System, API, Template, User, Group]
+        - allow: [User, Group]
+    - type: url
+      target: https://raw.githubusercontent.com/InduwaraSMPN/YAMLs-for-Backstage/main/organizations/wso2/templates/wso2-sample-nodejs-app/template.yaml
+      rules:
+        - allow: [Template]
     # # Uncomment these lines to add more example data
     # - type: url
     #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml

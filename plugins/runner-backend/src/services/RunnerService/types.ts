@@ -32,18 +32,30 @@ export interface RunnerService {
   startComponent(
     entity: Entity
   ): Promise<RunnerInstance>;
-  
+
   stopComponent(
     instanceId: string,
     options: { credentials: BackstageCredentials }
   ): Promise<void>;
-  
+
   getStatus(instanceId: string): Promise<RunnerInstance>;
-  
+
   listInstances(): Promise<RunnerInstance[]>;
-  
+
   getLogs(
     instanceId: string,
     options?: { follow?: boolean; tail?: number }
   ): Promise<string | NodeJS.ReadableStream>;
+
+  getInstanceStats(instanceId: string): Promise<any>;
+
+  getInstanceHealth(instanceId: string): Promise<any>;
+
+  getInstanceMetrics(instanceId: string, limit?: number): Promise<any>;
+
+  getErrorHistory(limit?: number): Promise<any>;
+
+  getInstanceErrors(instanceId: string): Promise<any>;
+
+  cleanup(): Promise<void>;
 }

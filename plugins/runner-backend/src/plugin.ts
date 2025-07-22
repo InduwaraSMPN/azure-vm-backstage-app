@@ -20,12 +20,14 @@ export const runnerPlugin = createBackendPlugin({
         httpAuth: coreServices.httpAuth,
         httpRouter: coreServices.httpRouter,
         urlReader: coreServices.urlReader,
+        config: coreServices.rootConfig,
         catalog: catalogServiceRef,
       },
-      async init({ logger, httpAuth, httpRouter, urlReader, catalog }) {
+      async init({ logger, httpAuth, httpRouter, urlReader, config, catalog }) {
         const runnerService = await createRunnerService({
           logger,
           urlReader,
+          config,
         });
 
         httpRouter.use(

@@ -92,5 +92,67 @@ export async function createRouter({
     }
   });
 
+  // Get instance statistics
+  router.get('/instances/:id/stats', async (req, res) => {
+    try {
+      const stats = await runnerService.getInstanceStats(req.params.id);
+      res.json({ stats });
+    } catch (error) {
+      res.status(404).json({
+        error: error instanceof Error ? error.message : 'Failed to get instance stats'
+      });
+    }
+  });
+
+  // Get instance health
+  router.get('/instances/:id/health', async (req, res) => {
+    try {
+      const health = await runnerService.getInstanceHealth(req.params.id);
+      res.json({ health });
+    } catch (error) {
+      res.status(404).json({
+        error: error instanceof Error ? error.message : 'Failed to get instance health'
+      });
+    }
+  });
+
+  // Get instance metrics
+  router.get('/instances/:id/metrics', async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const metrics = await runnerService.getInstanceMetrics(req.params.id, limit);
+      res.json({ metrics });
+    } catch (error) {
+      res.status(404).json({
+        error: error instanceof Error ? error.message : 'Failed to get instance metrics'
+      });
+    }
+  });
+
+  // Get instance errors
+  router.get('/instances/:id/errors', async (req, res) => {
+    try {
+      const errors = await runnerService.getInstanceErrors(req.params.id);
+      res.json({ errors });
+    } catch (error) {
+      res.status(404).json({
+        error: error instanceof Error ? error.message : 'Failed to get instance errors'
+      });
+    }
+  });
+
+  // Get error history
+  router.get('/errors', async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const errors = await runnerService.getErrorHistory(limit);
+      res.json({ errors });
+    } catch (error) {
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Failed to get error history'
+      });
+    }
+  });
+
   return router;
 }

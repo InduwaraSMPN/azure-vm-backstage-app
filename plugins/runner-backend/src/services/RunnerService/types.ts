@@ -30,8 +30,7 @@ export interface RunnerConfig {
 
 export interface RunnerService {
   startComponent(
-    entity: Entity,
-    options: { credentials: BackstageCredentials }
+    entity: Entity
   ): Promise<RunnerInstance>;
   
   stopComponent(

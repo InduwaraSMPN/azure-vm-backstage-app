@@ -1,4 +1,4 @@
-import { HttpAuthService, UrlReaderService } from '@backstage/backend-plugin-api';
+import { HttpAuthService } from '@backstage/backend-plugin-api';
 import { InputError, NotFoundError } from '@backstage/errors';
 import { z } from 'zod';
 import express from 'express';
@@ -48,7 +48,7 @@ export async function createRouter({
       throw new InputError('Component is not enabled for runner');
     }
 
-    const instance = await runnerService.startComponent(entity, { credentials });
+    const instance = await runnerService.startComponent(entity);
     res.status(201).json(instance);
   });
 
@@ -59,7 +59,7 @@ export async function createRouter({
       throw new InputError(parsed.error.toString());
     }
 
-    await runnerService.stopComponent(parsed.data.instanceId);
+    await runnerService.stopComponent(parsed.data.instanceId, { credentials: await httpAuth.credentials(req) });
     res.status(200).json({ message: 'Component stopped successfully' });
   });
 

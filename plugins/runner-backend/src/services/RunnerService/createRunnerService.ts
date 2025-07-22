@@ -16,5 +16,5 @@ export async function createRunnerService({
   const dockerService = new DockerService(logger);
   const configService = new ConfigService(urlReader);
 
-  return new RunnerServiceImpl(logger, dockerService, configService, urlReader);
+  return new RunnerServiceImpl(logger, dockerService, configService);
 }

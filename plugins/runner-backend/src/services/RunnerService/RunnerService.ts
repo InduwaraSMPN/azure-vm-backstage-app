@@ -1,4 +1,4 @@
-import { LoggerService, UrlReaderService } from '@backstage/backend-plugin-api';
+import { LoggerService } from '@backstage/backend-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 import { RunnerService, RunnerInstance, RunnerConfig } from './types';
 import { DockerService } from '../DockerService/DockerService';
@@ -16,11 +16,10 @@ export class RunnerServiceImpl implements RunnerService {
   constructor(
     private logger: LoggerService,
     private dockerService: DockerService,
-    private configService: ConfigService,
-    private urlReader: UrlReaderService
+    private configService: ConfigService
   ) {}
 
-  async startComponent(entity: Entity, options: any): Promise<RunnerInstance> {
+  async startComponent(entity: Entity): Promise<RunnerInstance> {
     // Check if another instance is already running
     if (this.currentInstance) {
       const current = this.instances.get(this.currentInstance);
@@ -69,7 +68,7 @@ export class RunnerServiceImpl implements RunnerService {
     } catch (error) {
       instance.status = 'error';
       instance.error = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to start component ${componentRef}:`, error);
+      this.logger.error(`Failed to start component ${componentRef}:`, error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -186,7 +185,7 @@ export class RunnerServiceImpl implements RunnerService {
           clearInterval(healthCheckTimer);
         }
       } catch (error) {
-        this.logger.warn(`Health check failed for instance ${instance.id}:`, error);
+        this.logger.warn(`Health check failed for instance ${instance.id}:`, error instanceof Error ? error : new Error(String(error)));
       }
     }, interval);
   }

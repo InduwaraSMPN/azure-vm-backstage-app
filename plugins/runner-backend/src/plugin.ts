@@ -4,7 +4,7 @@ import {
 } from '@backstage/backend-plugin-api';
 import { createRouter } from './router';
 import { catalogServiceRef } from '@backstage/plugin-catalog-node';
-import { createTodoListService } from './services/TodoListService';
+import { createRunnerService } from './services/RunnerService';
 
 /**
  * runnerPlugin backend plugin
@@ -19,18 +19,20 @@ export const runnerPlugin = createBackendPlugin({
         logger: coreServices.logger,
         httpAuth: coreServices.httpAuth,
         httpRouter: coreServices.httpRouter,
+        urlReader: coreServices.urlReader,
         catalog: catalogServiceRef,
       },
-      async init({ logger, httpAuth, httpRouter, catalog }) {
-        const todoListService = await createTodoListService({
+      async init({ logger, httpAuth, httpRouter, urlReader, catalog }) {
+        const runnerService = await createRunnerService({
           logger,
-          catalog,
+          urlReader,
         });
 
         httpRouter.use(
           await createRouter({
             httpAuth,
-            todoListService,
+            runnerService,
+            catalog,
           }),
         );
       },

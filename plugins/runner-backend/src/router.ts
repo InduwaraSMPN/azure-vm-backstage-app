@@ -1,50 +1,95 @@
-import { HttpAuthService } from '@backstage/backend-plugin-api';
-import { InputError } from '@backstage/errors';
+import { HttpAuthService, UrlReaderService } from '@backstage/backend-plugin-api';
+import { InputError, NotFoundError } from '@backstage/errors';
 import { z } from 'zod';
 import express from 'express';
 import Router from 'express-promise-router';
-import { TodoListService } from './services/TodoListService/types';
+import { RunnerService } from './services/RunnerService/types';
+import { catalogServiceRef } from '@backstage/plugin-catalog-node';
 
 export async function createRouter({
   httpAuth,
-  todoListService,
+  runnerService,
+  catalog,
 }: {
   httpAuth: HttpAuthService;
-  todoListService: TodoListService;
+  runnerService: RunnerService;
+  catalog: typeof catalogServiceRef.T;
 }): Promise<express.Router> {
   const router = Router();
   router.use(express.json());
 
-  // TEMPLATE NOTE:
-  // Zod is a powerful library for data validation and recommended in particular
-  // for user-defined schemas. In this case we use it for input validation too.
-  //
-  // If you want to define a schema for your API we recommend using Backstage's
-  // OpenAPI tooling: https://backstage.io/docs/next/openapi/01-getting-started
-  const todoSchema = z.object({
-    title: z.string(),
-    entityRef: z.string().optional(),
+  // Schema validation
+  const startComponentSchema = z.object({
+    entityRef: z.string(),
   });
 
-  router.post('/todos', async (req, res) => {
-    const parsed = todoSchema.safeParse(req.body);
+  const stopComponentSchema = z.object({
+    instanceId: z.string(),
+  });
+
+  // Start component endpoint
+  router.post('/start', async (req, res) => {
+    const parsed = startComponentSchema.safeParse(req.body);
     if (!parsed.success) {
       throw new InputError(parsed.error.toString());
     }
 
-    const result = await todoListService.createTodo(parsed.data, {
-      credentials: await httpAuth.credentials(req, { allow: ['user'] }),
-    });
+    const credentials = await httpAuth.credentials(req, { allow: ['user'] });
 
-    res.status(201).json(result);
+    // Get entity from catalog
+    const entity = await catalog.getEntityByRef(parsed.data.entityRef, { credentials });
+    if (!entity) {
+      throw new NotFoundError(`Entity not found: ${parsed.data.entityRef}`);
+    }
+
+    // Check if entity has runner annotation
+    const runnerEnabled = entity.metadata.annotations?.['runner.backstage.io/enabled'];
+    if (runnerEnabled !== 'true') {
+      throw new InputError('Component is not enabled for runner');
+    }
+
+    const instance = await runnerService.startComponent(entity, { credentials });
+    res.status(201).json(instance);
   });
 
-  router.get('/todos', async (_req, res) => {
-    res.json(await todoListService.listTodos());
+  // Stop component endpoint
+  router.post('/stop', async (req, res) => {
+    const parsed = stopComponentSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new InputError(parsed.error.toString());
+    }
+
+    await runnerService.stopComponent(parsed.data.instanceId);
+    res.status(200).json({ message: 'Component stopped successfully' });
   });
 
-  router.get('/todos/:id', async (req, res) => {
-    res.json(await todoListService.getTodo({ id: req.params.id }));
+  // Get instance status
+  router.get('/instances/:id', async (req, res) => {
+    const instance = await runnerService.getStatus(req.params.id);
+    res.json(instance);
+  });
+
+  // List all instances
+  router.get('/instances', async (_req, res) => {
+    const instances = await runnerService.listInstances();
+    res.json({ items: instances });
+  });
+
+  // Get instance logs
+  router.get('/instances/:id/logs', async (req, res) => {
+    const follow = req.query.follow === 'true';
+    const tail = req.query.tail ? parseInt(req.query.tail as string, 10) : undefined;
+
+    const logs = await runnerService.getLogs(req.params.id, { follow, tail });
+
+    if (typeof logs === 'string') {
+      res.json({ logs });
+    } else {
+      // Stream logs for real-time updates
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      logs.pipe(res);
+    }
   });
 
   return router;

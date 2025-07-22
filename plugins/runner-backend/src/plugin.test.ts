@@ -1,85 +1,37 @@
-import {
-  mockCredentials,
-  startTestBackend,
-} from '@backstage/backend-test-utils';
+import { startTestBackend } from '@backstage/backend-test-utils';
 import { runnerPlugin } from './plugin';
 import request from 'supertest';
 import { catalogServiceMock } from '@backstage/plugin-catalog-node/testUtils';
 
-// TEMPLATE NOTE:
-// Plugin tests are integration tests for your plugin, ensuring that all pieces
-// work together end-to-end. You can still mock injected backend services
-// however, just like anyone who installs your plugin might replace the
-// services with their own implementations.
 describe('plugin', () => {
-  it('should create and read TODO items', async () => {
-    const { server } = await startTestBackend({
-      features: [runnerPlugin],
-    });
-
-    await request(server).get('/api/runner/todos').expect(200, {
-      items: [],
-    });
-
-    const createRes = await request(server)
-      .post('/api/runner/todos')
-      .send({ title: 'My Todo' });
-
-    expect(createRes.status).toBe(201);
-    expect(createRes.body).toEqual({
-      id: expect.any(String),
-      title: 'My Todo',
-      createdBy: mockCredentials.user().principal.userEntityRef,
-      createdAt: expect.any(String),
-    });
-
-    const createdTodoItem = createRes.body;
-
-    await request(server)
-      .get('/api/runner/todos')
-      .expect(200, {
-        items: [createdTodoItem],
-      });
-
-    await request(server)
-      .get(`/api/runner/todos/${createdTodoItem.id}`)
-      .expect(200, createdTodoItem);
-  });
-
-  it('should create TODO item with catalog information', async () => {
+  it('should start the runner plugin and list instances', async () => {
     const { server } = await startTestBackend({
       features: [
         runnerPlugin,
         catalogServiceMock.factory({
-          entities: [
-            {
-              apiVersion: 'backstage.io/v1alpha1',
-              kind: 'Component',
-              metadata: {
-                name: 'my-component',
-                namespace: 'default',
-                title: 'My Component',
-              },
-              spec: {
-                type: 'service',
-                owner: 'me',
-              },
-            },
-          ],
+          entities: [],
         }),
       ],
     });
 
-    const createRes = await request(server)
-      .post('/api/runner/todos')
-      .send({ title: 'My Todo', entityRef: 'component:default/my-component' });
+    // Test that the instances endpoint is available and returns empty list
+    const response = await request(server).get('/api/runner/instances');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ items: [] });
+  });
 
-    expect(createRes.status).toBe(201);
-    expect(createRes.body).toEqual({
-      id: expect.any(String),
-      title: '[My Component] My Todo',
-      createdBy: mockCredentials.user().principal.userEntityRef,
-      createdAt: expect.any(String),
+  it('should return error for non-existent instance', async () => {
+    const { server } = await startTestBackend({
+      features: [
+        runnerPlugin,
+        catalogServiceMock.factory({
+          entities: [],
+        }),
+      ],
     });
+
+    // Test that getting a non-existent instance returns an error
+    const response = await request(server).get('/api/runner/instances/non-existent-id');
+    expect(response.status).toBe(500); // Will be 500 because the service throws an error for non-existent instances
   });
 });

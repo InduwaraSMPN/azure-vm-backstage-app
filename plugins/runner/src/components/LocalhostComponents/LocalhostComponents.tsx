@@ -7,6 +7,7 @@ import {
   TableColumn,
   Progress,
   ResponseErrorPanel,
+  Link,
 } from '@backstage/core-components';
 
 export const LocalhostComponents = () => {
@@ -14,7 +15,10 @@ export const LocalhostComponents = () => {
   
   const { value, loading, error } = useAsync(async (): Promise<Entity[]> => {
     const response = await catalogApi.getEntities({
-      filter: { 'metadata.tags': 'localhost' }
+      filter: {
+        kind: 'Component',
+        'metadata.tags': 'localhost'
+      }
     });
     return response.items;
   }, []);
@@ -26,7 +30,15 @@ export const LocalhostComponents = () => {
   }
 
   const columns: TableColumn<Entity>[] = [
-    { title: 'Name', field: 'metadata.name' },
+    {
+      title: 'Name',
+      field: 'metadata.name',
+      render: (entity: Entity) => (
+        <Link to={`/catalog/default/component/${entity.metadata.name}`}>
+          {entity.metadata.name}
+        </Link>
+      ),
+    },
     { title: 'Kind', field: 'kind' },
     { title: 'Description', field: 'metadata.description' },
   ];

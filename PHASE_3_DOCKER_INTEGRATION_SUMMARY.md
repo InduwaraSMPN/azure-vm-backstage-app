@@ -2,13 +2,15 @@
 
 ## Overview
 
-Phase 3 successfully implements comprehensive Docker integration enhancements for the Backstage runner plugin, building upon the foundation established in Phase 1 (backend) and Phase 2 (frontend). This phase introduces advanced Docker capabilities, enhanced monitoring, configurable settings, and robust error handling.
+Phase 3 successfully implements comprehensive Docker integration enhancements with **GitHub integration via Octokit** for the Backstage runner plugin, building upon the foundation established in Phase 1 (backend) and Phase 2 (frontend). This phase introduces advanced Docker capabilities, external network access, enhanced monitoring, configurable settings, and robust error handling.
 
 ## Key Features Implemented
 
 ### 1. Enhanced Docker Service (`DockerService.ts`)
 
 **New Capabilities:**
+- **GitHub Integration**: Repository management via Octokit instead of Git clone
+- **External Network Access**: Containers bind to `0.0.0.0` for VM external access
 - **Initialization and Health Checks**: Automatic Docker daemon availability verification
 - **Build Caching**: Intelligent image caching to reduce build times
 - **Resource Management**: Configurable CPU, memory, and timeout limits
@@ -255,9 +257,36 @@ runner:
    - Error: Container resource constraints
    - Solution: Adjust `resourceLimits` configuration
 
+## 🌐 **Network Configuration Enhancement**
+
+### **External Access Implementation**
+- **Port Binding**: Changed from `localhost:port` to `0.0.0.0:port:port`
+- **VM Compatibility**: Perfect for environments where Backstage runs on external IP
+- **Consistent Access**: Same pattern as Backstage (e.g., `20.2.34.21:3000` → `20.2.34.21:3001`)
+
+### **Code Change**
+```typescript
+// BEFORE: localhost only
+const portMappings = config.ports.flatMap(port => ['-p', `${port}:${port}`]);
+
+// AFTER: external access
+const portMappings = config.ports.flatMap(port => ['-p', `0.0.0.0:${port}:${port}`]);
+```
+
+## 🎉 **Implementation Complete and Verified**
+
+### **Live Test Results**
+```
+2025-07-23T05:07:34.614Z runner info Downloading GitHub repository: InduwaraSMPN/Next.js-Blog-Application (ref: main)
+2025-07-23T05:07:35.758Z runner info Successfully downloaded and extracted repository
+2025-07-23T05:07:36.963Z runner info Successfully built image: runner-31d9b83f-fccb-4880-9b87-2a3e881e6bd0
+```
+
+**Verification**: Application successfully accessible at `http://20.2.34.21:3001`
+
 ## Next Steps
 
-Phase 3 completes the core Docker integration. Future enhancements could include:
+Phase 3 completes the core Docker integration with GitHub integration. Future enhancements could include:
 
 1. **Multi-stage Builds**: Support for complex Docker builds
 2. **Registry Integration**: Private registry support
@@ -267,4 +296,4 @@ Phase 3 completes the core Docker integration. Future enhancements could include
 
 ## Conclusion
 
-Phase 3 successfully delivers a production-ready Docker integration with comprehensive monitoring, configuration management, and error handling. The implementation provides a solid foundation for running containerized applications in Backstage with enterprise-grade reliability and observability.
+Phase 3 successfully delivers a production-ready Docker integration with **GitHub integration via Octokit**, external network access, comprehensive monitoring, configuration management, and error handling. The implementation provides a solid foundation for running containerized applications in Backstage with enterprise-grade reliability and observability.

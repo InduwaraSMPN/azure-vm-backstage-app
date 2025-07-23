@@ -15,13 +15,15 @@
 
 ## Overview
 
-This guide provides a comprehensive A-Z implementation plan for the Backstage Runner Plugin using a Docker-based approach. The plugin enables one-click deployment of components from within Backstage, focusing on running single static frontend applications locally.
+This guide provides a comprehensive A-Z implementation plan for the Backstage Runner Plugin using a Docker-based approach with **advanced GitHub integration via Octokit**. The plugin enables one-click deployment of components from within Backstage, focusing on running single static frontend applications locally with robust repository management.
 
 ### Key Requirements (Wave 1)
 - **Single Component Execution**: Only one component running at a time (no port conflicts)
 - **Static Frontend Focus**: Primarily for static frontend applications
 - **Local Execution**: Components run on the user's local machine
 - **Docker-Based**: Uses Docker containers for consistent environments
+- **GitHub Integration**: Uses Octokit for robust repository management
+- **External Access**: Containers accessible via external IP for VM environments
 - **No Persistent Storage**: No database/storage requirements for first wave
 - **No Multi-Service Support**: Single service per component for initial implementation
 

@@ -29,6 +29,12 @@ describe('createRouter', () => {
       getStatus: jest.fn(),
       listInstances: jest.fn(),
       getLogs: jest.fn(),
+      getInstanceStats: jest.fn(),
+      getInstanceHealth: jest.fn(),
+      getInstanceMetrics: jest.fn(),
+      getErrorHistory: jest.fn(),
+      getInstanceErrors: jest.fn(),
+      cleanup: jest.fn(),
     };
 
     catalog = {

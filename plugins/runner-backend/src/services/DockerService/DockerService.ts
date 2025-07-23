@@ -160,7 +160,7 @@ export class DockerService {
     // Check for port conflicts
     await this.checkPortAvailability(config.ports);
 
-    const portMappings = config.ports.flatMap(port => ['-p', `${port}:${port}`]);
+    const portMappings = config.ports.flatMap(port => ['-p', `0.0.0.0:${port}:${port}`]);
     const envVars = config.environment
       ? Object.entries(config.environment).flatMap(([key, value]) => ['-e', `${key}=${value}`])
       : [];

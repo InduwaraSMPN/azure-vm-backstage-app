@@ -29,5 +29,5 @@ export async function createRunnerService({
 
   const configService = new ConfigService(urlReader);
 
-  return new RunnerServiceImpl(logger, dockerService, configService);
+  return new RunnerServiceImpl(logger, dockerService, configService, config);
 }

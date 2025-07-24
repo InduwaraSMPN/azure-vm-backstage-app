@@ -1,9 +1,12 @@
-import { Button, Chip, Box, Typography } from '@material-ui/core';
+import { Button, Chip, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions } from '@material-ui/core';
 import PlayArrow from '@material-ui/icons/PlayArrow';
 import Stop from '@material-ui/icons/Stop';
 import { Entity } from '@backstage/catalog-model';
 import { useRunner } from '../../hooks/useRunner';
 import { RunnerInstance } from '../../api/RunnerApi';
+import { DeploymentStepper } from '../DeploymentStepper';
+import { useDeploymentProgress } from '../../hooks/useDeploymentProgress';
+import React, { useState } from 'react';
 
 interface RunnerControlsProps {
   entity: Entity;
@@ -14,11 +17,22 @@ interface RunnerControlsProps {
 export const RunnerControls = ({ entity, instance, onInstanceChange }: RunnerControlsProps) => {
   const { startComponent, stopComponent, loading } = useRunner();
   const entityRef = `${entity.kind}:${entity.metadata.namespace || 'default'}/${entity.metadata.name}`;
+  const [showDeploymentDialog, setShowDeploymentDialog] = useState(false);
+
+  // Track deployment progress for starting instances
+  const { deploymentProgress } = useDeploymentProgress({
+    instanceId: instance?.id,
+    enabled: instance?.status === 'starting',
+  });
 
   const handleStart = async () => {
     const newInstance = await startComponent(entityRef);
     if (newInstance && onInstanceChange) {
       onInstanceChange(newInstance);
+      // Show deployment dialog for starting instances
+      if (newInstance.status === 'starting') {
+        setShowDeploymentDialog(true);
+      }
     }
   };
 
@@ -46,6 +60,16 @@ export const RunnerControls = ({ entity, instance, onInstanceChange }: RunnerCon
   const isStarting = instance?.status === 'starting';
   const isStopping = instance?.status === 'stopping';
 
+  // Auto-close deployment dialog when deployment completes
+  React.useEffect(() => {
+    if (deploymentProgress?.isComplete || instance?.status !== 'starting') {
+      const timer = setTimeout(() => {
+        setShowDeploymentDialog(false);
+      }, 2000); // Keep dialog open for 2 seconds after completion
+      return () => clearTimeout(timer);
+    }
+  }, [deploymentProgress?.isComplete, instance?.status]);
+
   return (
     <Box display="flex" alignItems="center" style={{ gap: 16 }}>
       <Box>
@@ -57,7 +81,25 @@ export const RunnerControls = ({ entity, instance, onInstanceChange }: RunnerCon
             onClick={handleStart}
             disabled={loading || isStarting}
           >
-            {isStarting ? 'Starting...' : 'Start'}
+            {isStarting ? (
+              deploymentProgress ? (
+                <Box display="flex" alignItems="center" style={{ gap: 8 }}>
+                  <span>Deploying...</span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setShowDeploymentDialog(true)}
+                    style={{ marginLeft: 8 }}
+                  >
+                    View Progress
+                  </Button>
+                </Box>
+              ) : (
+                'Starting...'
+              )
+            ) : (
+              'Start'
+            )}
           </Button>
         ) : (
           <Button
@@ -80,6 +122,13 @@ export const RunnerControls = ({ entity, instance, onInstanceChange }: RunnerCon
             size="small"
           />
 
+          {/* Show compact deployment progress for starting instances */}
+          {isStarting && deploymentProgress && (
+            <Box style={{ minWidth: 200 }}>
+              <DeploymentStepper deploymentProgress={deploymentProgress} compact />
+            </Box>
+          )}
+
           {isRunning && instance.ports.length > 0 && (
             <Box>
               <Typography variant="body2" color="textSecondary">
@@ -100,6 +149,30 @@ export const RunnerControls = ({ entity, instance, onInstanceChange }: RunnerCon
           )}
         </Box>
       )}
+
+      {/* Deployment Progress Dialog */}
+      <Dialog
+        open={showDeploymentDialog}
+        onClose={() => setShowDeploymentDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Deployment Progress - {entity.metadata.name}
+        </DialogTitle>
+        <DialogContent>
+          {deploymentProgress ? (
+            <DeploymentStepper deploymentProgress={deploymentProgress} />
+          ) : (
+            <Typography>Loading deployment progress...</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowDeploymentDialog(false)} color="primary">
+            {deploymentProgress?.isComplete ? 'Close' : 'Hide'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

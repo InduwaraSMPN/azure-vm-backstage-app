@@ -1,6 +1,25 @@
 import { BackstageCredentials } from '@backstage/backend-plugin-api';
 import { Entity } from '@backstage/catalog-model';
 
+export interface DeploymentProgress {
+  currentStep: string;
+  steps: Array<{
+    type: string;
+    status: 'pending' | 'in_progress' | 'completed' | 'failed';
+    title: string;
+    description?: string;
+    startedAt?: string;
+    completedAt?: string;
+    error?: string;
+    progress?: number;
+  }>;
+  overallProgress: number;
+  isComplete: boolean;
+  hasError: boolean;
+  startedAt: string;
+  completedAt?: string;
+}
+
 export interface RunnerInstance {
   id: string;
   componentRef: string;
@@ -10,6 +29,7 @@ export interface RunnerInstance {
   startedAt: string;
   stoppedAt?: string;
   error?: string;
+  deploymentProgress?: DeploymentProgress;
 }
 
 export interface RunnerConfig {

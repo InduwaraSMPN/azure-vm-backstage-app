@@ -1,4 +1,5 @@
 import { createApiRef, DiscoveryApi, FetchApi } from '@backstage/core-plugin-api';
+import { DeploymentProgress } from '../types/deployment';
 
 export interface RunnerInstance {
   id: string;
@@ -9,6 +10,7 @@ export interface RunnerInstance {
   startedAt: string;
   stoppedAt?: string;
   error?: string;
+  deploymentProgress?: DeploymentProgress;
 }
 
 export interface RunnerApi {

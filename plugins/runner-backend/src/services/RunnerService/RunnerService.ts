@@ -1,6 +1,6 @@
 import { LoggerService } from '@backstage/backend-plugin-api';
 import { Entity } from '@backstage/catalog-model';
-import { RunnerService, RunnerInstance, RunnerConfig } from './types';
+import { RunnerService, RunnerInstance, RunnerConfig, DeploymentProgress } from './types';
 import { DockerService } from '../DockerService/DockerService';
 import { ConfigService } from '../ConfigService/ConfigService';
 import { ContainerMonitoringService } from '../ContainerMonitoringService';
@@ -34,6 +34,113 @@ export class RunnerServiceImpl implements RunnerService {
     this.scmIntegrations = ScmIntegrations.fromConfig(this.config);
   }
 
+  /**
+   * Create initial deployment progress
+   */
+  private createInitialDeploymentProgress(): DeploymentProgress {
+    const steps = [
+      {
+        type: 'downloading_repository',
+        status: 'pending' as const,
+        title: 'Downloading Repository',
+        description: 'Fetching source code from GitHub repository',
+      },
+      {
+        type: 'extracting_files',
+        status: 'pending' as const,
+        title: 'Extracting Files',
+        description: 'Extracting repository archive to temporary directory',
+      },
+      {
+        type: 'building_image',
+        status: 'pending' as const,
+        title: 'Building Docker Image',
+        description: 'Building container image from Dockerfile',
+      },
+      {
+        type: 'starting_container',
+        status: 'pending' as const,
+        title: 'Starting Container',
+        description: 'Creating and starting the Docker container',
+      },
+      {
+        type: 'monitoring_container',
+        status: 'pending' as const,
+        title: 'Monitoring Container',
+        description: 'Setting up health checks and monitoring',
+      },
+    ];
+
+    return {
+      currentStep: 'downloading_repository',
+      steps,
+      overallProgress: 0,
+      isComplete: false,
+      hasError: false,
+      startedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * Update deployment progress for a specific step
+   */
+  private updateDeploymentProgress(
+    instance: RunnerInstance,
+    stepType: string,
+    status: 'pending' | 'in_progress' | 'completed' | 'failed',
+    options?: {
+      error?: string;
+      progress?: number;
+      description?: string;
+    }
+  ): void {
+    if (!instance.deploymentProgress) {
+      instance.deploymentProgress = this.createInitialDeploymentProgress();
+    }
+
+    const progress = instance.deploymentProgress;
+    const stepIndex = progress.steps.findIndex(step => step.type === stepType);
+
+    if (stepIndex === -1) return;
+
+    const step = progress.steps[stepIndex];
+    step.status = status;
+
+    if (options?.error) step.error = options.error;
+    if (options?.progress !== undefined) step.progress = options.progress;
+    if (options?.description) step.description = options.description;
+
+    // Set timestamps
+    if (status === 'in_progress' && !step.startedAt) {
+      step.startedAt = new Date().toISOString();
+    } else if ((status === 'completed' || status === 'failed') && !step.completedAt) {
+      step.completedAt = new Date().toISOString();
+    }
+
+    // Calculate overall progress
+    const completedSteps = progress.steps.filter(s => s.status === 'completed').length;
+    const totalSteps = progress.steps.length;
+    progress.overallProgress = Math.round((completedSteps / totalSteps) * 100);
+
+    // Update current step
+    if (status === 'completed') {
+      const nextStepIndex = stepIndex + 1;
+      if (nextStepIndex < progress.steps.length) {
+        progress.currentStep = progress.steps[nextStepIndex].type;
+      }
+    } else if (status === 'in_progress') {
+      progress.currentStep = stepType;
+    }
+
+    // Check if deployment is complete
+    progress.hasError = progress.steps.some(s => s.status === 'failed');
+    progress.isComplete = completedSteps === totalSteps || progress.hasError;
+
+    if (progress.isComplete && !progress.completedAt) {
+      progress.completedAt = new Date().toISOString();
+    }
+  }
+
   async startComponent(entity: Entity): Promise<RunnerInstance> {
     // Check if another instance is already running
     if (this.currentInstance) {
@@ -46,13 +153,14 @@ export class RunnerServiceImpl implements RunnerService {
     const instanceId = crypto.randomUUID();
     const componentRef = `${entity.kind}:${entity.metadata.namespace || 'default'}/${entity.metadata.name}`;
 
-    // Create initial instance record
+    // Create initial instance record with deployment progress
     const instance: RunnerInstance = {
       id: instanceId,
       componentRef,
       status: 'starting',
       ports: [],
-      startedAt: new Date().toISOString()
+      startedAt: new Date().toISOString(),
+      deploymentProgress: this.createInitialDeploymentProgress()
     };
 
     this.instances.set(instanceId, instance);
@@ -63,17 +171,29 @@ export class RunnerServiceImpl implements RunnerService {
       const config = await this.configService.getRunnerConfig(entity);
       instance.ports = config.ports;
 
-      // Download repository to temporary directory using Backstage's GitHub integration
-      const repoPath = await this.cloneRepository(entity);
+      // Step 1: Download repository
+      this.updateDeploymentProgress(instance, 'downloading_repository', 'in_progress');
+      const repoPath = await this.cloneRepository(entity, instance);
+      this.updateDeploymentProgress(instance, 'downloading_repository', 'completed');
 
-      // Build Docker image
+      // Step 2: Extract files (handled within cloneRepository, but we'll mark it)
+      this.updateDeploymentProgress(instance, 'extracting_files', 'completed');
+
+      // Step 3: Build Docker image
+      this.updateDeploymentProgress(instance, 'building_image', 'in_progress');
       const imageName = await this.dockerService.buildImage(repoPath, config, instanceId);
+      this.updateDeploymentProgress(instance, 'building_image', 'completed');
 
-      // Run container
+      // Step 4: Start container
+      this.updateDeploymentProgress(instance, 'starting_container', 'in_progress');
       const containerId = await this.dockerService.runContainer(imageName, config, instanceId);
       instance.containerId = containerId;
-      instance.status = 'running';
+      this.updateDeploymentProgress(instance, 'starting_container', 'completed');
 
+      // Step 5: Set up monitoring
+      this.updateDeploymentProgress(instance, 'monitoring_container', 'in_progress');
+
+      instance.status = 'running';
       this.logger.info(`Started component ${componentRef} with instance ${instanceId}`);
 
       // Start health check monitoring
@@ -81,6 +201,8 @@ export class RunnerServiceImpl implements RunnerService {
 
       // Start container monitoring
       this.monitoringService.startMonitoring(instance);
+
+      this.updateDeploymentProgress(instance, 'monitoring_container', 'completed');
 
       return instance;
     } catch (error) {
@@ -96,6 +218,14 @@ export class RunnerServiceImpl implements RunnerService {
 
       instance.status = 'error';
       instance.error = runnerError.userMessage;
+
+      // Update deployment progress to show failure
+      if (instance.deploymentProgress) {
+        const currentStep = instance.deploymentProgress.currentStep;
+        this.updateDeploymentProgress(instance, currentStep, 'failed', {
+          error: runnerError.userMessage
+        });
+      }
 
       this.logger.error(`Failed to start component ${componentRef}:`, {
         error: runnerError.userMessage,
@@ -273,7 +403,7 @@ export class RunnerServiceImpl implements RunnerService {
     this.logger.info('RunnerService cleanup completed');
   }
 
-  private async cloneRepository(entity: Entity): Promise<string> {
+  private async cloneRepository(entity: Entity, instance?: RunnerInstance): Promise<string> {
     const sourceLocation = entity.metadata.annotations?.['backstage.io/source-location'];
     if (!sourceLocation) {
       throw new Error('Component missing source location annotation');
@@ -315,6 +445,9 @@ export class RunnerServiceImpl implements RunnerService {
 
       // Extract tarball
       this.logger.info(`Extracting archive to ${extractDir}`);
+      if (instance) {
+        this.updateDeploymentProgress(instance, 'extracting_files', 'in_progress');
+      }
       await this.extractTarball(Buffer.from(archiveResponse.data as ArrayBuffer), extractDir);
 
       // Find the extracted repository directory (GitHub archives create a subdirectory)
